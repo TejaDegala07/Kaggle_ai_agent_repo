@@ -1,0 +1,46 @@
+from adk.tools import Tool, ToolSpecification
+from typing import Dict, Any
+
+# Define the Custom Tool Class
+class MaterialClassifierTool(Tool):
+    """
+    A custom tool used to break down a waste item into its constituent materials.
+    """
+    def __init__(self):
+        # 1. Define the input/output specification for the LLM
+        spec = ToolSpecification(
+            name="MaterialClassifierTool",
+            description="Analyzes a waste item and returns a JSON dictionary of its constituent parts and primary material.",
+            parameters={
+                "item_description": {"type": "str", "description": "The name or brief description of the waste item (e.g., 'single-use coffee cup')."},
+            },
+            return_type="Dict[str, str]",
+        )
+        super().__init__(spec=spec, function=self.classify_material)
+
+    # 2. Define the actual Python function the tool executes
+    def classify_material(self, item_description: str) -> Dict[str, str]:
+        """Simulates an external image/material recognition API call."""
+        
+        # --- LOGIC SIMULATION (Replace with actual ML model or database lookup) ---
+        if "coffee cup" in item_description.lower():
+            result = {
+                "sleeve": "Cardboard/Paper",
+                "lid": "Plastic (PP-5)",
+                "cup_body": "Paper-Lined (Mixed Material)",
+                "contamination": "Liquid Residue"
+            }
+        elif "pizza box" in item_description.lower():
+            result = {
+                "main_box": "Cardboard",
+                "grease": "Heavy Food Residue (Contaminated)",
+            }
+        else:
+            result = {"item": item_description, "material": "Unknown/Requires LLM Guess"}
+        # --------------------------------------------------------------------------
+        
+        # The LLM receives this dictionary as observation
+        return result
+
+# You would then pass an instance of this class to your agent:
+# waste_analyzer_agent = LlmAgent(..., tools=[MaterialClassifierTool()])
