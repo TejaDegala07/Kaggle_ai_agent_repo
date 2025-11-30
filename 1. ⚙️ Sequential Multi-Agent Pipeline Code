@@ -1,0 +1,52 @@
+# Assuming you are using an Agent Development Kit (like Google's ADK or similar open-source frameworks)
+from adk.agents import LlmAgent, SequentialAgent, Tool
+from adk.tools import GoogleSearchTool
+from custom_tools import MaterialClassifierTool # Defined below
+
+# --- 1. Define Sub-Agents ---
+
+# Agent 1: Determines local policy based on user input
+geo_locator_agent = LlmAgent(
+    name="GeoLocatorAgent",
+    model="gemini-2.5-flash",
+    instruction="Identify the user's current city/municipality from the input. Use the LocalPolicyAPI tool to fetch the waste sorting rules for that location.",
+    # The output (policy document) will be saved to the shared state
+    output_key="local_policy", 
+    tools=[OpenAPITool('LocalPolicyAPI')] # Placeholder for your OpenAPI/custom policy tool
+)
+
+# Agent 2: Analyzes the waste item's material (Runs in parallel conceptually, but placed here in the sequence for data flow)
+waste_analyzer_agent = LlmAgent(
+    name="WasteAnalyzerAgent",
+    model="gemini-2.5-flash",
+    instruction="Analyze the user's waste item description/image metadata. Use the MaterialClassifierTool to determine material breakdown (e.g., Plastic type, Paper, Compostable).",
+    output_key="material_analysis", 
+    tools=[MaterialClassifierTool()] # Custom Tool defined below
+)
+
+# Agent 3: Combines data and provides the final localized instruction
+decision_education_agent = LlmAgent(
+    name="DecisionEducationAgent",
+    model="gemini-2.5-flash",
+    # Instructions use the data saved by previous agents: {local_policy} and {material_analysis}
+    instruction="Given the {local_policy} and the {material_analysis}, generate the definitive, hyperlocal sorting instruction. If the item is non-recyclable, use the GoogleSearchTool to suggest a sustainable alternative or local drop-off.",
+    # Includes the Loop Agent behavior (search and refine)
+    tools=[GoogleSearchTool()] 
+)
+
+# --- 2. Create the Sequential Workflow ---
+
+eco_sort_pipeline = SequentialAgent(
+    name="EcoSortPipeline",
+    description="Executes a three-step process: Policy Lookup -> Material Analysis -> Final Decision/Education.",
+    # The order of execution is guaranteed: A1 -> A2 -> A3
+    sub_agents=[
+        geo_locator_agent,
+        waste_analyzer_agent,
+        decision_education_agent
+    ]
+)
+
+# --- 3. Run the Workflow (Conceptual Call) ---
+# result = eco_sort_pipeline.run(user_input="How do I dispose of a plastic-lined paper coffee cup in Chicago?")
+# print(result.final_output)
