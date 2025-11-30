@@ -1,0 +1,37 @@
+# Conceptual Long-Term Memory (using a simple dictionary to represent a Memory Bank DB)
+
+class UserMemoryBank:
+    """Simulates a database for long-term user context."""
+    def __init__(self):
+        # Stores user-specific, persistent data
+        self.memory = {}
+
+    def store_user_preference(self, user_id: str, key: str, value: Any):
+        """Stores a persistent user fact (e.g., their address or a past mistake)."""
+        if user_id not in self.memory:
+            self.memory[user_id] = {}
+        
+        # Example: Stores the most recent verified location
+        self.memory[user_id][key] = value
+        print(f"💾 Memory Stored: User {user_id} - {key}: {value}")
+
+    def retrieve_user_context(self, user_id: str) -> Dict[str, Any]:
+        """Retrieves all known context for a user."""
+        return self.memory.get(user_id, {})
+
+# --- Usage Example within GeoLocatorAgent ---
+# In the GeoLocatorAgent's execution logic:
+#
+# user_id = "user_456" 
+# memory_bank = UserMemoryBank()
+#
+# # 1. Retrieval (Context Engineering)
+# saved_context = memory_bank.retrieve_user_context(user_id)
+# 
+# if 'home_address' in saved_context:
+#     # Inject saved location into the prompt for the LLM
+#     current_prompt = f"User is at {saved_context['home_address']}. Proceed to fetch policy."
+#
+# # 2. Storage (Persistence)
+# # After successfully determining the location and policy:
+# memory_bank.store_user_preference(user_id, 'home_address', '123 E Wacker Dr, Chicago, IL 60601')
